@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>もじ・かんじ・けいさんゲーム</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: white;
+      width: 100%;
+      max-width: 440px;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+      margin-top: 5px;
+      position: relative;
+    }
+    h1 { font-size: 20px; color: #333; margin: 0 0 10px 0; }
+    .section-title {
+      font-size: 13px; font-weight: bold; color: #475569;
+      margin: 10px 0 4px 0; text-align: left;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 6px; }
+    
+    /* 大モード切替タブ */
+    .main-tab-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;
+    }
+    .main-tab-btn {
+      padding: 10px 2px; border: 3px solid #cbd5e1; border-radius: 10px;
+      font-weight: bold; font-size: 13px; cursor: pointer;
+      background-color: #f1f5f9; color: #475569;
+    }
+    .main-tab-btn.active {
+      background-color: #0284c7; color: white; border-color: #0284c7;
+    }
+
+    /* サブタブ・ボタン */
+    .sub-tab-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px;
+    }
+    .mode-btn {
+      padding: 8px 2px; border: 2px solid #cbd5e1; border-radius: 8px;
+      font-weight: bold; font-size: 11px; cursor: pointer;
+      background-color: #f1f5f9; color: #64748b;
+    }
+    .mode-btn.active { background-color: #2563eb; color: white; border-color: #2563eb; }
+    .mode-btn.locked { opacity: 0.55; background-color: #e2e8f0; cursor: not-allowed; }
+
+    .opt-btn {
+      padding: 8px 4px; border: 2px solid #cbd5e1; border-radius: 8px;
+      font-weight: bold; font-size: 12px; cursor: pointer;
+      background-color: #f8fafc; color: #475569;
+    }
+    .opt-btn.active { background-color: #2563eb; color: white; border-color: #2563eb; }
+    .opt-btn.locked { opacity: 0.55; background-color: #e2e8f0; cursor: not-allowed; border-color: #cbd5e1; }
+
+    .op-btn { padding: 8px 2px; font-size: 12px; }
+    .op-btn.active { background-color: #0284c7; border-color: #0284c7; color: white; }
+
+    .start-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      font-size: 17px; font-weight: bold; cursor: pointer;
+      margin-top: 12px; background-color: #16a34a; color: white;
+    }
+    .sub-btn {
+      padding: 8px; border: none; border-radius: 8px; font-size: 12px;
+      font-weight: bold; cursor: pointer; background-color: #e2e8f0; color: #334155;
+    }
+    
+    .info-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; font-weight: bold; color: #64748b; margin-bottom: 6px;
+    }
+    .life-display {
+      color: #e11d48; background-color: #ffe4e6; padding: 2px 8px;
+      border-radius: 12px; border: 1px solid #fecdd3; font-size: 14px;
+    }
+    .quit-btn {
+      background-color: #ef4444; color: white; border: none; border-radius: 6px;
+      padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer;
+    }
+    
+    .quiz-box {
+      font-size: 54px; font-weight: bold; color: #2563eb; background-color: #eff6ff;
+      border: 3px solid #2563eb; border-radius: 16px; padding: 10px 0; margin: 6px 0; line-height: 1.1;
+    }
+    .sub-text { font-size: 14px; font-weight: bold; color: #475569; margin-bottom: 6px; }
+
+    /* 4択UI */
+    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .choice-btn {
+      padding: 12px 0; font-size: 22px; font-weight: bold; background-color: #ffffff;
+      border: 3px solid #cbd5e1; border-radius: 12px; color: #1e293b; cursor: pointer;
+    }
+    .choice-btn:active { background-color: #cbd5e1; }
+
+    /* テンキーUI */
+    .answer-display {
+      font-size: 32px; font-weight: bold; color: #2563eb; background-color: #eff6ff;
+      border: 3px solid #2563eb; border-radius: 12px; padding: 4px 12px;
+      min-height: 48px; display: flex; align-items: center; justify-content: center;
+      margin: 4px auto 8px auto; width: 140px;
+    }
+    .tenkey-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px;
+    }
+    .num-btn {
+      padding: 10px 0; font-size: 20px; font-weight: bold; background-color: #f8fafc;
+      border: 2px solid #cbd5e1; border-radius: 10px; color: #1e293b; cursor: pointer;
+    }
+    .num-btn:active { background-color: #cbd5e1; }
+    .clear-btn { font-size: 12px; background-color: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+    .del-btn { font-size: 16px; background-color: #fef3c7; border-color: #fde047; color: #d97706; }
+    .check-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 8px;
+      background-color: #16a34a; color: white;
+    }
+
+    .kana-scroll-area { max-height: 180px; overflow-y: auto; padding: 2px; }
+
+    /* 図鑑画面 */
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+      max-height: 320px; overflow-y: auto; padding: 4px; margin-top: 8px;
+    }
+    .gallery-item {
+      font-size: 18px; font-weight: bold; padding: 8px 2px; border-radius: 8px;
+      border: 2px solid #cbd5e1; background-color: #f1f5f9; color: #94a3b8; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .gallery-item.solved { background-color: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+    .gallery-item .item-icon { font-size: 26px; margin: 2px 0; }
+    .gallery-item .item-sub { font-size: 9px; font-weight: normal; color: #64748b; }
+    .gallery-item .rarity-tag { font-size: 8px; font-weight: bold; padding: 1px 4px; border-radius: 4px; color: white; }
+
+    .card-ur { border: 2px solid #eab308 !important; background: linear-gradient(135deg, #fffbe3 0%, #ffffff 100%); }
+    .card-sr { border: 2px solid #f59e0b !important; background: #fffdf0; }
+    .card-r { border: 2px solid #3b82f6 !important; background: #f0f7ff; }
+    .card-n { border: 2px solid #94a3b8 !important; }
+
+    /* モーダル */
+    .modal-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
+      border-radius: 16px; z-index: 100;
+    }
+    .modal-body {
+      background: white; padding: 16px; border-radius: 12px; width: 82%; text-align: center;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- 設定画面 -->
+  <div id="setup-screen">
+    <h1>がくしゅうゲーム</h1>
+
+    <!-- 1. メインモード切替（カナ／漢字／計算） -->
+    <div class="main-tab-grid">
+      <button type="button" class="main-tab-btn active" onclick="switchAppCategory('katakana', this)">🔤 カナ</button>
+      <button type="button" class="main-tab-btn" onclick="switchAppCategory('kanji', this)">✍️ かんじ</button>
+      <button type="button" class="main-tab-btn" onclick="switchAppCategory('math', this)">🔢 けいさん</button>
+    </div>
+
+    <!-- 2. カタカナ設定エリア -->
+    <div id="katakana-menu">
+      <div class="section-title">えらんでね（スクロールできます）</div>
+      <div class="kana-scroll-area">
+        <div class="grid-2" id="kana-group-grid"></div>
+      </div>
+      <div class="grid-1">
+        <button type="button" class="opt-btn" id="kana-all-btn" style="background-color: #fef3c7; border-color: #f59e0b; color: #b45309;" onclick="selectKanaGroup('all', this)">⭐ ぜんぶ（107おん）</button>
+      </div>
+    </div>
+
+    <!-- 3. 漢字設定エリア -->
+    <div id="kanji-menu" class="hidden">
+      <div class="section-title">がくねん</div>
+      <div class="sub-tab-grid" id="kanji-grade-tabs">
+        <button type="button" class="mode-btn active" onclick="switchKanjiGrade('kanji1', this)">1ねん</button>
+        <button type="button" class="mode-btn" onclick="switchKanjiGrade('kanji2', this)">2ねん</button>
+        <button type="button" class="mode-btn" onclick="switchKanjiGrade('kanji3', this)">3ねん</button>
+        <button type="button" class="mode-btn" onclick="switchKanjiGrade('kanji4', this)">4ねん</button>
+        <button type="button" class="mode-btn" onclick="switchKanjiGrade('kanji5', this)">5ねん</button>
+        <button type="button" class="mode-btn" onclick="switchKanjiGrade('kanji6', this)">6ねん</button>
+      </div>
+      <div class="section-title">もんだいのかず</div>
+      <div class="grid-3">
+        <button type="button" class="opt-btn active" onclick="selectKanjiCount(10, this)">10もん</button>
+        <button type="button" class="opt-btn" onclick="selectKanjiCount(20, this)">20もん</button>
+        <button type="button" class="opt-btn" id="kanji-all-btn" style="background-color: #fef3c7; border-color: #f59e0b; color: #b45309;" onclick="selectKanjiCount('all', this)">⭐ ぜんぶ</button>
+      </div>
+    </div>
+
+    <!-- 4. 計算設定エリア -->
+    <div id="math-menu" class="hidden">
+      <div class="section-title">けいさん</div>
+      <div class="grid-3">
+        <button type="button" class="opt-btn op-btn active" onclick="selectMathMode('add', this)">＋ たしざん</button>
+        <button type="button" class="opt-btn op-btn" onclick="selectMathMode('carry_add', this)">＋ くりあがり</button>
+        <button type="button" class="opt-btn op-btn" onclick="selectMathMode('sub', this)">− ひきざん</button>
+        <button type="button" class="opt-btn op-btn" onclick="selectMathMode('borrow_sub', this)">− くりさがり</button>
+        <button type="button" class="opt-btn op-btn" onclick="selectMathMode('mul', this)">× かけざん</button>
+        <button type="button" class="opt-btn op-btn" onclick="selectMathMode('div', this)">÷ わりざん</button>
+      </div>
+      <div class="section-title">だん・ステージ</div>
+      <div class="grid-5" id="math-stage-buttons"></div>
+      <div class="grid-2" style="margin-top:6px;">
+        <button type="button" class="opt-btn" id="btn-math-mix" onclick="selectMathStage('mix', this)">ミックス(10もん)</button>
+        <button type="button" class="opt-btn" id="btn-math-all" onclick="selectMathStage('all', this)">ぜんぶ(100もん)</button>
+      </div>
+      <div class="section-title">じゅんばん</div>
+      <div class="grid-3" id="math-order-buttons">
+        <button type="button" class="opt-btn active" onclick="selectMathOrder('asc', this)">ちいさい順</button>
+        <button type="button" class="opt-btn" onclick="selectMathOrder('desc', this)">おおきい順</button>
+        <button type="button" class="opt-btn" onclick="selectMathOrder('rand', this)">バラバラ</button>
+      </div>
+    </div>
+
+    <!-- 共通設定：ライフ（文字用） -->
+    <div id="life-setting-section">
+      <div class="section-title">ライフ（お手つきできる かず）</div>
+      <div class="grid-4" id="life-buttons">
+        <button type="button" class="opt-btn" onclick="selectLife(1, this)">1かい</button>
+        <button type="button" class="opt-btn active" onclick="selectLife(3, this)">3かい</button>
+        <button type="button" class="opt-btn" onclick="selectLife(5, this)">5かい</button>
+        <button type="button" class="opt-btn" onclick="selectLife('inf', this)">む制限</button>
+      </div>
+    </div>
+
+    <button type="button" class="start-btn" onclick="startGame()">スタート！</button>
+
+    <!-- モード＆データ管理 -->
+    <div class="section-title">せってい・ずかん</div>
+    <div class="grid-3">
+      <button type="button" class="sub-btn" id="lock-toggle-btn" onclick="toggleFreeMode()">🔒 じゅんばん</button>
+      <button type="button" class="sub-btn" style="background-color: #e0f2fe; color: #0369a1;" onclick="openGallery()">🏆 図鑑・ずかん</button>
+      <button type="button" class="sub-btn" style="background-color: #fef2f2; color: #b91c1c;" onclick="resetData()">🗑️ リセット</button>
+    </div>
+  </div>
+
+  <!-- プレイ画面 -->
+  <div id="game-screen" class="hidden">
+    <div class="info-bar">
+      <span id="progress-text">1 / 10問</span>
+      <span class="life-display" id="life-display">❤️ × 3</span>
+      <span id="timer-display" class="hidden" style="color:#2563eb; font-size:14px;">⏱ 00:00</span>
+      <button type="button" class="quit-btn" onclick="quitGame()">やめる</button>
+    </div>
+
+    <div class="quiz-box" id="quiz-display">ア</div>
+    <div class="sub-text" id="quiz-subtext">これの「よみかた」はどれ？</div>
+
+    <!-- 文字クイズ用 (4択) -->
+    <div class="choice-grid" id="choice-grid"></div>
+
+    <!-- 計算クイズ用 (テンキー) -->
+    <div id="math-input-container" class="hidden">
+      <div class="answer-display" id="answer-display">?</div>
+      <div class="tenkey-grid">
+        <button type="button" class="num-btn" onclick="pressNum('1')">1</button>
+        <button type="button" class="num-btn" onclick="pressNum('2')">2</button>
+        <button type="button" class="num-btn" onclick="pressNum('3')">3</button>
+        <button type="button" class="num-btn" onclick="pressNum('4')">4</button>
+        <button type="button" class="num-btn" onclick="pressNum('5')">5</button>
+        <button type="button" class="num-btn" onclick="pressNum('6')">6</button>
+        <button type="button" class="num-btn" onclick="pressNum('7')">7</button>
+        <button type="button" class="num-btn" onclick="pressNum('8')">8</button>
+        <button type="button" class="num-btn" onclick="pressNum('9')">9</button>
+        <button type="button" class="num-btn clear-btn" onclick="clearInput()">けす</button>
+        <button type="button" class="num-btn" onclick="pressNum('0')">0</button>
+        <button type="button" class="num-btn del-btn" onclick="deleteLastNum()">⌫</button>
+      </div>
+      <button type="button" class="check-btn" onclick="submitMathAnswer()">こたえる</button>
+    </div>
+  </div>
+
+  <!-- 図鑑画面 -->
+  <div id="gallery-screen" class="hidden">
+    <h1>コレクション図鑑</h1>
+    <div class="main-tab-grid">
+      <button type="button" class="main-tab-btn active" onclick="switchGalleryTab('kanji', this)">✍️ かんじ</button>
+      <button type="button" class="main-tab-btn" onclick="switchGalleryTab('math', this)">🔢 けいさん</button>
+    </div>
+
+    <!-- 漢字図鑑タブ -->
+    <div id="gallery-kanji-section">
+      <div class="sub-tab-grid" id="gallery-grade-tabs">
+        <button type="button" class="mode-btn active" onclick="switchGalleryGrade('kanji1', this)">1ねん</button>
+        <button type="button" class="mode-btn" onclick="switchGalleryGrade('kanji2', this)">2ねん</button>
+        <button type="button" class="mode-btn" onclick="switchGalleryGrade('kanji3', this)">3ねん</button>
+        <button type="button" class="mode-btn" onclick="switchGalleryGrade('kanji4', this)">4ねん</button>
+        <button type="button" class="mode-btn" onclick="switchGalleryGrade('kanji5', this)">5ねん</button>
+        <button type="button" class="mode-btn" onclick="switchGalleryGrade('kanji6', this)">6ねん</button>
+      </div>
+      <div class="section-title" id="gallery-kanji-status">0 / 0 かんじ クリア</div>
+    </div>
+
+    <!-- 計算図鑑タブ -->
+    <div id="gallery-math-section" class="hidden">
+      <div class="section-title" id="gallery-math-status">0 / 72 ステージ マスター</div>
+    </div>
+
+    <div class="gallery-grid" id="gallery-grid"></div>
+    <button type="button" class="start-btn" style="background-color: #64748b; margin-top: 12px;" onclick="closeGallery()">もどる</button>
+  </div>
+
+  <!-- 図鑑詳細モーダル -->
+  <div id="modal-screen" class="modal-overlay hidden">
+    <div class="modal-body">
+      <div id="modal-title" style="font-size: 54px; font-weight: bold; color: #2563eb;">生</div>
+      <div style="font-size: 13px; color: #64748b; margin-top: 4px;">よみかた・しょうさい</div>
+      <div id="modal-desc" style="font-size: 18px; font-weight: bold; color: #1e293b; margin: 8px 0 14px 0;">いきる、せい</div>
+      <button type="button" class="sub-btn" style="width: 100%; padding: 10px;" onclick="closeModal()">とじる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // カタカナ定義
+  const kanaGroupList = [
+    { id: 'a', name: 'アぎょう' }, { id: 'ka', name: 'カぎょう' }, { id: 'sa', name: 'サぎょう' },
+    { id: 'ta', name: 'タぎょう' }, { id: 'na', name: 'ナぎょう' }, { id: 'ha', name: 'ハぎょう' },
+    { id: 'ma', name: 'マぎょう' }, { id: 'ya', name: 'ヤぎょう' }, { id: 'ra', name: 'ラぎょう' },
+    { id: 'wa', name: 'ワぎょう' }, { id: 'ga', name: 'ガぎょう' }, { id: 'za', name: 'ザぎょう' },
+    { id: 'da', name: 'ダぎょう' }, { id: 'ba', name: 'バぎょう' }, { id: 'pa', name: 'パぎょう' },
+    { id: 'kya', name: 'キャぎょう' }, { id: 'gya', name: 'ギャぎょう' }, { id: 'sha', name: 'シャぎょう' },
+    { id: 'ja', name: 'ジャぎょう' }, { id: 'cha', name: 'チャぎょう' }, { id: 'nya', name: 'ニャぎょう' },
+    { id: 'hya', name: 'ヒャぎょう' }, { id: 'bya', name: 'ビャぎょう' }, { id: 'pya', name: 'ピャぎょう' },
+    { id: 'mya', name: 'ミャぎょう' }, { id: 'rya', name: 'リャぎょう' }
+  ];
+
+  const kanaData = [
+    { group: 'a', katakana: 'ア', hiragana: ['あ'] }, { group: 'a', katakana: 'イ', hiragana: ['い'] }, { group: 'a', katakana: 'ウ', hiragana: ['う'] }, { group: 'a', katakana: 'エ', hiragana: ['え'] }, { group: 'a', katakana: 'オ', hiragana: ['お'] },
+    { group: 'ka', katakana: 'カ', hiragana: ['か'] }, { group: 'ka', katakana: 'キ', hiragana: ['き'] }, { group: 'ka', katakana: 'ク', hiragana: ['く'] }, { group: 'ka', katakana: 'ケ', hiragana: ['け'] }, { group: 'ka', katakana: 'コ', hiragana: ['こ'] },
+    { group: 'sa', katakana: 'サ', hiragana: ['さ'] }, { group: 'sa', katakana: 'シ', hiragana: ['し'] }, { group: 'sa', katakana: 'ス', hiragana: ['す'] }, { group: 'sa', katakana: 'セ', hiragana: ['せ'] }, { group: 'sa', katakana: 'ソ', hiragana: ['そ'] },
+    { group: 'ta', katakana: 'タ', hiragana: ['た'] }, { group: 'ta', katakana: 'チ', hiragana: ['ち'] }, { group: 'ta', katakana: 'ツ', hiragana: ['つ'] }, { group: 'ta', katakana: 'テ', hiragana: ['て'] }, { group: 'ta', katakana: 'ト', hiragana: ['と'] },
+    { group: 'na', katakana: 'ナ', hiragana: ['な'] }, { group: 'na', katakana: 'ニ', hiragana: ['に'] }, { group: 'na', katakana: 'ヌ', hiragana: ['ぬ'] }, { group: 'na', katakana: 'ネ', hiragana: ['ね'] }, { group: 'na', katakana: 'ノ', hiragana: ['の'] },
+    { group: 'ha', katakana: 'ハ', hiragana: ['は'] }, { group: 'ha', katakana: 'ヒ', hiragana: ['ひ'] }, { group: 'ha', katakana: 'フ', hiragana: ['ふ'] }, { group: 'ha', katakana: 'ヘ', hiragana: ['へ'] }, { group: 'ha', katakana: 'ホ', hiragana: ['ほ'] },
+    { group: 'ma', katakana: 'マ', hiragana: ['ま'] }, { group: 'ma', katakana: 'ミ', hiragana: ['み'] }, { group: 'ma', katakana: 'ム', hiragana: ['む'] }, { group: 'ma', katakana: 'メ', hiragana: ['め'] }, { group: 'ma', katakana: 'モ', hiragana: ['も'] },
+    { group: 'ya', katakana: 'ヤ', hiragana: ['や'] }, { group: 'ya', katakana: 'ユ', hiragana: ['ゆ'] }, { group: 'ya', katakana: 'ヨ', hiragana: ['よ'] },
+    { group: 'ra', katakana: 'ラ', hiragana: ['ら'] }, { group: 'ra', katakana: 'リ', hiragana: ['り'] }, { group: 'ra', katakana: 'ル', hiragana: ['る'] }, { group: 'ra', katakana: 'レ', hiragana: ['れ'] }, { group: 'ra', katakana: 'ロ', hiragana: ['ろ'] },
+    { group: 'wa', katakana: 'ワ', hiragana: ['わ'] }, { group: 'wa', katakana: 'ヲ', hiragana: ['を'] }, { group: 'wa', katakana: 'ン', hiragana: ['ん'] },
+    { group: 'ga', katakana: 'ガ', hiragana: ['が'] }, { group: 'ga', katakana: 'ギ', hiragana: ['ぎ'] }, { group: 'ga', katakana: 'グ', hiragana: ['ぐ'] }, { group: 'ga', katakana: 'ゲ', hiragana: ['げ'] }, { group: 'ga', katakana: 'ゴ', hiragana: ['ご'] },
+    { group: 'za', katakana: 'ザ', hiragana: ['ざ'] }, { group: 'za', katakana: 'ジ', hiragana: ['じ'] }, { group: 'za', katakana: 'ズ', hiragana: ['ず'] }, { group: 'za', katakana: 'ゼ', hiragana: ['ぜ'] }, { group: 'za', katakana: 'ゾ', hiragana: ['ぞ'] },
+    { group: 'da', katakana: 'ダ', hiragana: ['だ'] }, { group: 'da', katakana: 'ヂ', hiragana: ['ぢ'] }, { group: 'da', katakana: 'ヅ', hiragana: ['づ'] }, { group: 'da', katakana: 'デ', hiragana: ['で'] }, { group: 'da', katakana: 'ド', hiragana: ['ど'] },
+    { group: 'ba', katakana: 'バ', hiragana: ['ば'] }, { group: 'ba', katakana: 'ビ', hiragana: ['び'] }, { group: 'ba', katakana: 'ブ', hiragana: ['ぶ'] }, { group: 'ba', katakana: 'ベ', hiragana: ['べ'] }, { group: 'ba', katakana: 'ボ', hiragana: ['ぼ'] },
+    { group: 'pa', katakana: 'パ', hiragana: ['ぱ'] }, { group: 'pa', katakana: 'ピ', hiragana: ['ぴ'] }, { group: 'pa', katakana: 'プ', hiragana: ['ぷ'] }, { group: 'pa', katakana: 'ペ', hiragana: ['ぺ'] }, { group: 'pa', katakana: 'ポ', hiragana: ['ぽ'] },
+    { group: 'kya', katakana: 'キャ', hiragana: ['きゃ'] }, { group: 'kya', katakana: 'キュ', hiragana: ['きゅ'] }, { group: 'kya', katakana: 'キョ', hiragana: ['きょ'] },
+    { group: 'gya', katakana: 'ギャ', hiragana: ['ぎゃ'] }, { group: 'gya', katakana: 'ギュ', hiragana: ['ぎゅ'] }, { group: 'gya', katakana: 'ギョ', hiragana: ['ぎょ'] },
+    { group: 'sha', katakana: 'シャ', hiragana: ['しゃ'] }, { group: 'sha', katakana: 'シュ', hiragana: ['しゅ'] }, { group: 'sha', katakana: 'ショ', hiragana: ['しょ'] },
+    { group: 'ja', katakana: 'ジャ', hiragana: ['じゃ'] }, { group: 'ja', katakana: 'ジュ', hiragana: ['じゅ'] }, { group: 'ja', katakana: 'ジョ', hiragana: ['じょ'] },
+    { group: 'cha', katakana: 'チャ', hiragana: ['ちゃ'] }, { group: 'cha', katakana: 'チュ', hiragana: ['ちゅ'] }, { group: 'cha', katakana: 'チョ', hiragana: ['ちょ'] },
+    { group: 'nya', katakana: 'ニャ', hiragana: ['にゃ'] }, { group: 'nya', katakana: 'ニュ', hiragana: ['にゅ'] }, { group: 'nya', katakana: 'ニョ', hiragana: ['にょ'] },
+    { group: 'hya', katakana: 'ヒャ', hiragana: ['ひゃ'] }, { group: 'hya', katakana: 'ヒュ', hiragana: ['ひゅ'] }, { group: 'hya', katakana: 'ヒョ', hiragana: ['ひょ'] },
+    { group: 'bya', katakana: 'ビャ', hiragana: ['びゃ'] }, { group: 'bya', katakana: 'ビュ', hiragana: ['びゅ'] }, { group: 'bya', katakana: 'ビョ', hiragana: ['びょ'] },
+    { group: 'pya', katakana: 'ピャ', hiragana: ['ぴゃ'] }, { group: 'pya', katakana: 'ピュ', hiragana: ['ぴゅ'] }, { group: 'pya', katakana: 'ピョ', hiragana: ['ぴょ'] },
+    { group: 'mya', katakana: 'ミャ', hiragana: ['みゃ'] }, { group: 'mya', katakana: 'ミュ', hiragana: ['みゅ'] }, { group: 'mya', katakana: 'ミョ', hiragana: ['みょ'] },
+    { group: 'rya', katakana: 'リャ', hiragana: ['りゃ'] }, { group: 'rya', katakana: 'リュ', hiragana: ['りゅ'] }, { group: 'rya', katakana: 'リョ', hiragana: ['りょ'] }
+  ];
+
+  // 全1,026漢字データベース
+  const kanjiDatabase = {
+    kanji1: [
+      { q: '一', a: ['いち', 'ひと'] }, { q: '二', a: ['に', 'ふた'] }, { q: '三', a: ['さん', 'みっつ'] }, { q: '四', a: ['よん', 'し'] }, { q: '五', a: ['ご', 'いつ'] },
+      { q: '六', a: ['ろく', 'むっつ'] }, { q: '七', a: ['なな', 'しち'] }, { q: '八', a: ['はち', 'やっつ'] }, { q: '九', a: ['きゅう', 'く'] }, { q: '十', a: ['じゅう', 'とお'] },
+      { q: '百', a: ['ひゃく'] }, { q: '千', a: ['せん'] }, { q: '上', a: ['うえ', 'のぼる'] }, { q: '下', a: ['した', 'くだる'] }, { q: '左', a: ['ひだり'] },
+      { q: '右', a: ['みぎ'] }, { q: '中', a: ['なか', 'ちゅう'] }, { q: '大', a: ['おおきい', 'だい'] }, { q: '小', a: ['ちいさい', 'しょう'] }, { q: '月', a: ['つき', 'げつ'] },
+      { q: '日', a: ['ひ', 'にち'] }, { q: '木', a: ['き', 'もく'] }, { q: '山', a: ['やま', 'さん'] }, { q: '川', a: ['かわ'] }, { q: '田', a: ['たんぼ', 'でん'] },
+      { q: '水', a: ['みず', 'すい'] }, { q: '火', a: ['ひ', 'か'] }, { q: '土', a: ['つち', 'ど'] }, { q: '竹', a: ['たけ'] }, { q: '石', a: ['いし', 'せき'] },
+      { q: '天', a: ['てん', 'あめ'] }, { q: '気', a: ['き'] }, { q: '雨', a: ['あめ', 'う'] }, { q: '赤', a: ['あか', 'せき'] }, { q: '青', a: ['あお', 'せい'] },
+      { q: '白', a: ['しろ', 'はく'] }, { q: '人', a: ['ひと', 'じん'] }, { q: '名', a: ['なまえ', 'めい'] }, { q: '女', a: ['おんな', 'じょ'] }, { q: '男', a: ['おとこ', 'だん'] },
+      { q: '子', a: ['こ', 'し'] }, { q: '目', a: ['め', 'もく'] }, { q: '耳', a: ['みみ'] }, { q: '口', a: ['くち', 'こう'] }, { q: '手', a: ['て', 'しゅ'] },
+      { q: '足', a: ['あし', 'そく'] }, { q: '見', a: ['みる', 'けん'] }, { q: '音', a: ['おと', 'おん'] }, { q: '力', a: ['ちから', 'りょく'] }, { q: '夕', a: ['ゆうがた'] },
+      { q: '花', a: ['はな', 'か'] }, { q: '草', a: ['くさ', 'そう'] }, { q: '虫', a: ['むし', 'ちゅう'] }, { q: '犬', a: ['いぬ', 'けん'] }, { q: '貝', a: ['かい'] },
+      { q: '林', a: ['はやし', 'りん'] }, { q: '森', a: ['もり', 'しん'] }, { q: '立', a: ['たつ', 'りつ'] }, { q: '休', a: ['やすむ', 'きゅう'] }, { q: '先', a: ['さき', 'せん'] },
+      { q: '生', a: ['いきる', 'せい', 'しょう', 'うまれる', 'なま'] }, { q: '学', a: ['まなぶ', 'がく'] }, { q: '校', a: ['がっこう', 'こう'] }, { q: '王', a: ['おうさま', 'おう'] }, { q: '玉', a: ['たま'] },
+      { q: '字', a: ['じ'] }, { q: '文', a: ['ぶん', 'ふみ'] }, { q: '本', a: ['ほん', 'もと'] }, { q: '正', a: ['ただしい', 'せい'] }, { q: '出', a: ['だす', 'しゅつ'] },
+      { q: '入', a: ['はいる', 'にゅう'] }, { q: '早', a: ['はやい', 'そう'] }, { q: '町', a: ['まち', 'ちょう'] }, { q: '村', a: ['むら', 'そん'] }, { q: '糸', a: ['いと', 'し'] },
+      { q: '車', a: ['くるま', 'しゃ'] }, { q: '金', a: ['かね', 'きん'] }, { q: '年', a: ['とし', 'ねん'] }, { q: '空', a: ['そら', 'くう'] }, { q: '円', a: ['えん', 'まるい'] }
+    ],
+    kanji2: [
+      { q: '引', a: ['ひく', 'いん'] }, { q: '羽', a: ['はね', 'う'] }, { q: '雲', a: ['くも', 'うん'] }, { q: '園', a: ['その', 'えん'] }, { q: '遠', a: ['とおい', 'えん'] },
+      { q: '何', a: ['なに', 'か'] }, { q: '科', a: ['か'] }, { q: '夏', a: ['なつ', 'か'] }, { q: '家', a: ['いえ', 'か', 'うち'] }, { q: '歌', a: ['うた', 'か'] },
+      { q: '画', a: ['が', 'かく'] }, { q: '回', a: ['まわる', 'かい'] }, { q: '会', a: ['あう', 'かい'] }, { q: '海', a: ['うみ', 'かい'] }, { q: '絵', a: ['え', 'かい'] },
+      { q: '外', a: ['そと', 'がい'] }, { q: '角', a: ['かど', 'かく'] }, { q: '楽', a: ['たのしい', 'がく', 'らく'] }, { q: '活', a: ['いきる', 'かつ'] }, { q: '間', a: ['あいだ', 'かん'] },
+      { q: '丸', a: ['まる', 'がん'] }, { q: '岩', a: ['いわ', 'がん'] }, { q: '顔', a: ['かお', 'がん'] }, { q: '汽', a: ['き'] }, { q: '記', a: ['きろく', 'き'] },
+      { q: '帰', a: ['かえる', 'き'] }, { q: '弓', a: ['ゆみ', 'きゅう'] }, { q: '牛', a: ['うし', 'ぎゅう'] }, { q: '魚', a: ['さかな', 'ぎょ'] }, { q: '京', a: ['きょう', 'けい'] },
+      { q: '強', a: ['つよい', 'きょう'] }, { q: '教', a: ['おしえる', 'きょう'] }, { q: '近', a: ['ちかい', 'きん'] }, { q: '兄', a: ['あに', 'けい'] }, { q: '形', a: ['かたち', 'けい'] },
+      { q: '計', a: ['はかる', 'けい'] }, { q: '元', a: ['げんき', 'もと'] }, { q: '言', a: ['いう', 'げん'] }, { q: '原', a: ['はら', 'げん'] }, { q: '戸', a: ['と', 'こ'] },
+      { q: '古', a: ['ふるい', 'こ'] }, { q: '午', a: ['ひる', 'ご'] }, { q: '後', a: ['うしろ', 'ご', 'あと'] }, { q: '語', a: ['かたる', 'ご'] }, { q: '工', a: ['こう', 'く'] },
+      { q: '公', a: ['おおやけ', 'こう'] }, { q: '交', a: ['まじる', 'こう'] }, { q: '光', a: ['ひかり', 'こう'] }, { q: '向', a: ['むく', 'こう'] }, { q: '考', a: ['かんがえる', 'こう'] },
+      { q: '行', a: ['いく', 'こう', 'おこなう'] }, { q: '高', a: ['たかい', 'こう'] }, { q: '黄', a: ['きいろ', 'こう'] }, { q: '合', a: ['あう', 'ごう'] }, { q: '谷', a: ['たに', 'こく'] },
+      { q: '国', a: ['くに', 'こく'] }, { q: '黒', a: ['くろ', 'こく'] }, { q: '今', a: ['いま', 'こん'] }, { q: '才', a: ['さい'] }, { q: '細', a: ['ほそい', 'さい'] },
+      { q: '作', a: ['つくる', 'さく'] }, { q: '算', a: ['さんすう', 'さん'] }, { q: '止', a: ['とまる', 'し'] }, { q: '市', a: ['いち', 'し'] }, { q: '矢', a: ['や', 'し'] },
+      { q: '姉', a: ['あね', 'し'] }, { q: '思', a: ['おもう', 'し'] }, { q: '紙', a: ['かみ', 'し'] }, { q: '寺', a: ['てら', 'じ'] }, { q: '自', a: ['じぶん', 'じ'] },
+      { q: '時', a: ['とき', 'じ'] }, { q: '室', a: ['へや', 'しつ'] }, { q: '社', a: ['やしろ', 'しゃ'] }, { q: '者', a: ['ひと', 'しゃ'] }, { q: '首', a: ['くび', 'しゅ'] },
+      { q: '秋', a: ['あき', 'しゅう'] }, { q: '週', a: ['しゅう'] }, { q: '重', a: ['おもい', 'じゅう', 'かさなる'] }, { q: '宿', a: ['やど', 'しゅく'] }, { q: '春', a: ['はる', 'しゅん'] },
+      { q: '書', a: ['かく', 'しょ'] }, { q: '少', a: ['すくない', 'しょう'] }, { q: '場', a: ['ばしょ', 'じょう'] }, { q: '色', a: ['いろ', 'しき'] }, { q: '食', a: ['たべる', 'しょく'] }, { q: '心', a: ['こころ', 'しん'] }, { q: '新', a: ['あたらしい', 'しん'] }, { q: '親', a: ['おや', 'しん'] }, { q: '図', a: ['ず', 'と'] }, { q: '数', a: ['かず', 'すう'] },
+      { q: '西', a: ['にし', 'せい'] }, { q: '声', a: ['こえ', 'せい'] }, { q: '星', a: ['ほし', 'せい'] }, { q: '晴', a: ['はれる', 'せい'] }, { q: '切', a: ['きる', 'せつ'] },
+      { q: '雪', a: ['ゆき', 'せつ'] }, { q: '船', a: ['ふね', 'せん'] }, { q: '線', a: ['せん'] }, { q: '前', a: ['まえ', 'ぜん'] }, { q: '組', a: ['くみ', 'そ'] },
+      { q: '走', a: ['はしる', 'そう'] }, { q: '多', a: ['おい', 'た'] }, { q: '太', a: ['ふとい', 'た'] }, { q: '体', a: ['からだ', 'たい'] }, { q: '台', a: ['だい', 'たい'] },
+      { q: '地', a: ['ち', 'じ'] }, { q: '池', a: ['いけ', 'ち'] }, { q: '知', a: ['しる', 'ち'] }, { q: '茶', a: ['ちゃ', 'さ'] }, { q: '昼', a: ['ひる', 'ちゅう'] },
+      { q: '長', a: ['ながい', 'ちょう'] }, { q: '鳥', a: ['とり', 'ちょう'] }, { q: '朝', a: ['あさ', 'ちょう'] }, { q: '直', a: ['すなお', 'ちょく', 'なおす'] }, { q: '通', a: ['とおる', 'つう'] },
+      { q: '弟', a: ['おとうと', 'だい'] }, { q: '店', a: ['みせ', 'てん'] }, { q: '点', a: ['てん'] }, { q: '電', a: ['でんき', 'でん'] }, { q: '刀', a: ['かたな', 'とう'] },
+      { q: '冬', a: ['ふゆ', 'とう'] }, { q: '当', a: ['あたる', 'とう'] }, { q: '東', a: ['ひがし', 'とう'] }, { q: '答', a: ['こたえ', 'とう'] }, { q: '頭', a: ['あたま', 'とう'] },
+      { q: '同', a: ['おなじ', 'どう'] }, { q: '道', a: ['みち', 'どう'] }, { q: '読', a: ['よむ', 'どく'] }, { q: '内', a: ['うち', 'ない'] }, { q: '南', a: ['みなみ', 'なん'] },
+      { q: '肉', a: ['にく'] }, { q: '馬', a: ['うま', 'ば'] }, { q: '売', a: ['うる', 'ばい'] }, { q: '買', a: ['かう', 'ばい'] }, { q: '麦', a: ['むぎ', 'ばく'] },
+      { q: '半', a: ['はんぶん', 'はん'] }, { q: '番', a: ['ばん'] }, { q: '父', a: ['ちち', 'ふ'] }, { q: '風', a: ['かぜ', 'ふう'] }, { q: '分', a: ['わける', 'ぶん', 'ふん'] },
+      { q: '聞', a: ['きく', 'ぶん'] }, { q: '米', a: ['こめ', 'まい', 'べい'] }, { q: '歩', a: ['あるく', 'ほ'] }, { q: '母', a: ['はは', 'ぼ'] }, { q: '方', a: ['かた', 'ほう'] },
+      { q: '北', a: ['きた', 'ほく'] }, { q: '毎', a: ['まい'] }, { q: '妹', a: ['いもうと', 'まい'] }, { q: '万', a: ['まん', 'ばん'] }, { q: '明', a: ['あかるい', 'めい'] },
+      { q: '門', a: ['もん'] }, { q: '夜', a: ['よる', 'や'] }, { q: '野', a: ['の', 'や'] }, { q: '友', a: ['ともだち', 'ゆう'] }, { q: '用', a: ['よう'] },
+      { q: '曜', a: ['ようび', 'よう'] }, { q: '来', a: ['くる', 'らい'] }, { q: '理', a: ['り'] }, { q: '里', a: ['さと', 'り'] }, { q: '話', a: ['はなす', 'わ'] }
+    ],
+    kanji3: [
+      { q: '丁', a: ['ちょう'] }, { q: '世', a: ['よ', 'せい'] }, { q: '両', a: ['りょう'] }, { q: '主', a: ['おも', 'しゅ'] }, { q: '予', a: ['あらかじめ', 'よ'] },
+      { q: '事', a: ['こと', 'じ'] }, { q: '仕', a: ['つかえる', 'し'] }, { q: '他', a: ['ほか', 'た'] }, { q: '代', a: ['かわり', 'だい'] }, { q: '住', a: ['すむ', 'じゅう'] },
+      { q: '使', a: ['つかう', 'し'] }, { q: '係', a: ['かかり', 'けい'] }, { q: '倍', a: ['ばい'] }, { q: '全', a: ['まったく', 'ぜん'] }, { q: '具', a: ['ぐ'] },
+      { q: '写', a: ['うつす', 'しゃ'] }, { q: '列', a: ['れつ'] }, { q: '助', a: ['たすける', 'じょ'] }, { q: '勉', a: ['つとめる', 'べん'] }, { q: '動', a: ['うごく', 'どう'] },
+      { q: '勝', a: ['かつ', 'しょう'] }, { q: '化', a: ['ばける', 'か'] }, { q: '区', a: ['く'] }, { q: '医', a: ['いしゃ', 'い'] }, { q: '去', a: ['さる', 'きょ'] },
+      { q: '取', a: ['とる', 'しゅ'] }, { q: '受', a: ['うける', 'じゅ'] }, { q: '号', a: ['ごう'] }, { q: '向', a: ['むく', 'こう'] }, { q: '君', a: ['きみ', 'くん'] },
+      { q: '味', a: ['あじ', 'み'] }, { q: '命', a: ['いのち', 'めい'] }, { q: '和', a: ['わ', 'やわらぐ'] }, { q: '品', a: ['しな', 'ひん'] }, { q: '員', a: ['いん'] },
+      { q: '商', a: ['あきんど', 'しょう'] }, { q: '問', a: ['とう', 'もん'] }, { q: '坂', a: ['さか', 'はん'] }, { q: '央', a: ['おう'] }, { q: '始', a: ['はじめる', 'し'] },
+      { q: '委', a: ['ゆだねる', 'い'] }, { q: '守', a: ['まもる', 'しゅ'] }, { q: '安', a: ['やすい', 'あん'] }, { q: '定', a: ['さだめる', 'てい'] }, { q: '実', a: ['み', 'じつ'] },
+      { q: '客', a: ['きゃく', 'かく'] }, { q: '宮', a: ['みや', 'きゅう'] }, { q: '宿', a: ['やど', 'しゅく'] }, { q: '寒', a: ['さむい', 'かん'] }, { q: '対', a: ['たい', 'つい'] },
+      { q: '局', a: ['きょく'] }, { q: '屋', a: ['や', 'おく'] }, { q: '岸', a: ['きし', 'がん'] }, { q: '島', a: ['しま', 'とう'] }, { q: '州', a: ['しゅう'] },
+      { q: '巣', a: ['す', 'そう'] }, { q: '平', a: ['たいら', 'へい'] }, { q: '幸', a: ['さいわい', 'こう'] }, { q: '度', a: ['たび', 'ど'] }, { q: '庫', a: ['くら', 'こ'] },
+      { q: '庭', a: ['にわ', 'てい'] }, { q: '式', a: ['しき'] }, { q: '役', a: ['やく', 'えき'] }, { q: '待', a: ['まつ', 'たい'] }, { q: '急', a: ['いそぐ', 'きゅう'] },
+      { q: '息', a: ['いき', 'そく'] }, { q: '悪', a: ['わるい', 'あく'] }, { q: '悲', a: ['かなしい', 'ひ'] }, { q: '想', a: ['おもう', 'そう'] }, { q: '意', a: ['いみ', 'い'] },
+      { q: '感', a: ['かんじる', 'かん'] }, { q: '所', a: ['ところ', 'しょ'] }, { q: '打', a: ['うつ', 'だ'] }, { q: '投', a: ['なげる', 'とう'] }, { q: '拾', a: ['ひろう', 'じゅう'] },
+      { q: '持', a: ['もつ', 'じ'] }, { q: '指', a: ['ゆび', 'し'] }, { q: '放', a: ['はなす', 'ほう'] }, { q: '整', a: ['ととのえる', 'せい'] }, { q: '旅', a: ['たび', 'りょ'] },
+      { q: '族', a: ['ぞく'] }, { q: '昔', a: ['むかし', 'せき'] }, { q: '昭', a: ['しょう'] }, { q: '暑', a: ['あツイ', 'しょ'] }, { q: '暗', a: ['くらい', 'あん'] },
+      { q: '曲', a: ['まがる', 'きょく'] }, { q: '有', a: ['ある', 'ゆう'] }, { q: '服', a: ['ふく'] }, { q: '期', a: ['きかん', 'き'] }, { q: '板', a: ['いた', 'はん'] },
+      { q: '柱', a: ['はしら', 'ちゅう'] }, { q: '根', a: ['ね', 'こん'] }, { q: '植', a: ['うえる', 'しょく'] }, { q: '業', a: ['ぎょう', 'ごう'] }, { q: '様', a: ['さま', 'よう'] },
+      { q: '横', a: ['よこ', 'おう'] }, { q: '次', a: ['つぎ', 'じ'] }, { q: '歯', a: ['は', 'し'] }, { q: '死', a: ['しぬ', 'し'] }, { q: '波', a: ['なみ', 'は'] },
+      { q: '油', a: ['あぶら', 'ゆ'] }, { q: '注', a: ['そそぐ', 'ちゅう'] }, { q: '泳', a: ['およぐ', 'えい'] }, { q: '洋', a: ['よう'] }, { q: '流', a: ['ながれる', 'りゅう'] },
+      { q: '消', a: ['きえる', 'しょう'] }, { q: '深', a: ['ふかい', 'しん'] }, { q: '温', a: ['あたたかい', 'おん'] }, { q: '港', a: ['みなと', 'こう'] }, { q: '湖', a: ['みずうみ', 'こ'] },
+      { q: '湯', a: ['ゆ', 'とう'] }, { q: '登', a: ['のぼる', 'とう'] }, { q: '皮', a: ['かわ', 'ひ'] }, { q: '皿', a: ['さら'] }, { q: '相', a: ['あい', 'そう', 'しょう'] },
+      { q: '県', a: ['けん'] }, { q: '真', a: ['まこと', 'しん'] }, { q: '着', a: ['きる', 'ちゃく'] }, { q: '短', a: ['みじかい', 'たん'] }, { q: '研', a: ['とぐ', 'けん'] },
+      { q: '礼', a: ['れい', 'らい'] }, { q: '神', a: ['かみ', 'しん'] }, { q: '祭', a: ['まつり', 'さい'] }, { q: '福', a: ['ふく'] }, { q: '秒', a: ['びょう'] },
+      { q: '究', a: ['きわめる', 'きゅう'] }, { q: '章', a: ['しょう'] }, { q: '童', a: ['わらべ', 'どう'] }, { q: '笛', a: ['ふえ', 'てき'] }, { q: '第', a: ['だい'] },
+      { q: '筆', a: ['ふで', 'ひつ'] }, { q: '等', a: ['ひとしい', 'とう'] }, { q: '箱', a: ['はこ'] }, { q: '級', a: ['きゅう'] }, { q: '終', a: ['おわる', 'しゅう'] },
+      { q: '緑', a: ['みどり', 'りょく'] }, { q: '練', a: ['ねる', 'れん'] }, { q: '羊', a: ['ひつじ', 'よう'] }, { q: '美', a: ['うつくしい', 'び'] }, { q: '習', a: ['ならう', 'しゅう'] },
+      { q: '育', a: ['そだつ', 'いく'] }, { q: '苦', a: ['くるしい', 'く'] }, { q: '薬', a: ['くすり', 'やく'] }, { q: '表', a: ['おもて', 'ひょう'] }, { q: '詩', a: ['し'] },
+      { q: '調', a: ['しらべる', 'ちょう'] }, { q: '談', a: ['だん'] }, { q: '豆', a: ['まめ', 'とう'] }, { q: '負', a: ['まける', 'ふ'] }, { q: '起', a: ['おきる', 'き'] },
+      { q: '路', a: ['みち', 'ろ'] }, { q: '身', a: ['み', 'しん'] }, { q: '転', a: ['ころがる', 'てん'] }, { q: '軽', a: ['かるい', 'けい'] }, { q: '農', a: ['のうぎょう', 'のう'] },
+      { q: '返', a: ['かえす', 'へん'] }, { q: '追', a: ['おう', 'つい'] }, { q: '送', a: ['おくる', 'そう'] }, { q: '速', a: ['はやい', 'そく'] }, { q: '進', a: ['すすむ', 'しん'] },
+      { q: '遊', a: ['あそぶ', 'ゆう'] }, { q: '運', a: ['はこぶ', 'うん'] }, { q: '部', a: ['ぶ'] }, { q: '都', a: ['みやこ', 'と', 'つ'] }, { q: '酒', a: ['さけ', 'しゅ'] },
+      { q: '鉄', a: ['てつ'] }, { q: '銀', a: ['ぎん'] }, { q: '開', a: ['ひらく', 'かい'] }, { q: '院', a: ['いん'] }, { q: '陽', a: ['ひ', 'よう'] },
+      { q: '集', a: ['あつまる', 'しゅう'] }, { q: '面', a: ['おもて', 'めん'] }, { q: '駅', a: ['えき'] }, { q: '鼻', a: ['はな', 'び'] }
+    ],
+    kanji4: [
+      { q: '不', a: ['ふ', 'ぶ'] }, { q: '争', a: ['あらそう', 'そう'] }, { q: '付', a: ['つける', 'ふ'] }, { q: '令', a: ['れい'] }, { q: '以', a: ['い'] },
+      { q: '仲', a: ['なか', 'ちゅう'] }, { q: '伝', a: ['つたえる', 'でん'] }, { q: '位', a: ['くらい', 'い'] }, { q: '低', a: ['ひくい', 'てい'] }, { q: '例', a: ['たとえ', 'れい'] },
+      { q: '信', a: ['しんじる', 'しん'] }, { q: '倉', a: ['くら', 'そう'] }, { q: '健', a: ['すこやか', 'けん'] }, { q: '働', a: ['はたらく', 'どう'] }, { q: '兆', a: ['きざし', 'ちょう'] },
+      { q: '典', a: ['てん'] }, { q: '冷', a: ['つめたい', 'れい'] }, { q: '包', a: ['つつむ', 'ほう'] }, { q: '卒', a: ['そつぎょう', 'そつ'] }, { q: '協', a: ['きょうりょく', 'きょう'] },
+      { q: '単', a: ['たん'] }, { q: '博', a: ['はかせ', 'はく'] }, { q: '印', a: ['しるし', 'いん'] }, { q: '参', a: ['まいります', 'さん'] }, { q: '史', a: ['れきし', 'し'] },
+      { q: '司', a: ['つかさ', 'し'] }, { q: '各', a: ['おのおの', 'かく'] }, { q: '告', a: ['つげる', 'こく'] }, { q: '周', a: ['まわり', 'しゅう'] }, { q: '唱', a: ['となえる', 'しょう'] },
+      { q: '喜', a: ['よろこぶ', 'き'] }, { q: '器', a: ['うつわ', 'き'] }, { q: '囲', a: ['かこむ', 'い'] }, { q: '固', a: ['かためる', 'こ'] }, { q: '型', a: ['かた', 'けい'] },
+      { q: '堂', a: ['どう'] }, { q: '塩', a: ['しお', 'えん'] }, { q: '士', a: ['ぶし', 'し'] }, { q: '変', a: ['かわる', 'へん'] }, { q: '夫', a: ['おっと', 'ふ', 'ふう'] },
+      { q: '失', a: ['うしなう', 'しつ'] }, { q: '好', a: ['すき', 'こう'] }, { q: '季', a: ['きせつ', 'き'] }, { q: '孫', a: ['まご', 'そん'] }, { q: '完', a: ['かんぜん', 'かん'] },
+      { q: '官', a: ['かんちょう', 'かん'] }, { q: '害', a: ['がい'] }, { q: '察', a: ['さつ'] }, { q: '差', a: ['さ'] }, { q: '希', a: ['のぞみ', 'き'] },
+      { q: '席', a: ['せき'] }, { q: '帯', a: ['おび', 'たい'] }, { q: '底', a: ['そこ', 'てい'] }, { q: '府', a: ['ふ'] }, { q: '康', a: ['こう'] },
+      { q: '建', a: ['たてる', 'けん'] }, { q: '径', a: ['みち', 'けい'] }, { q: '徒', a: ['と'] }, { q: '得', a: ['える', 'とく'] }, { q: '必', a: ['かならず', 'ひつ'] },
+      { q: '念', a: ['ねん'] }, { q: '愛', a: ['あい'] }, { q: '成', a: ['なる', 'せい'] }, { q: '戦', a: ['たたかう', 'せん'] }, { q: '折', a: ['おる', 'せつ'] },
+      { q: '挙', a: ['あげる', 'きょ'] }, { q: '改', a: ['あらためる', 'かい'] }, { q: '救', a: ['すくう', 'きゅう'] }, { q: '敗', a: ['やぶれる', 'はい'] }, { q: '散', a: ['ちる', 'さん'] }, { q: '料', a: ['りょう'] }, { q: '旗', a: ['はた', 'き'] }, { q: '清', a: ['きよらか', 'せい'] }, { q: '景', a: ['けしき', 'けい'] }, { q: '暖', a: ['あたたかい', 'だん'] },
+      { q: '歴', a: ['れきし', 'れき'] }, { q: '暮', a: ['くらす', 'ぼ'] }, { q: '望', a: ['のぞむ', 'ぼう'] }, { q: '材', a: ['ざいりょう', 'ざい'] }, { q: '束', a: ['たば', 'そく'] },
+      { q: '松', a: ['まつ', 'しょう'] }, { q: '栄', a: ['さかえる', 'えい'] }, { q: '案', a: ['あん'] }, { q: '梅', a: ['うめ', 'ばい'] }, { q: '標', a: ['しるし', 'ひょう'] },
+      { q: '機', a: ['はた', 'き'] }, { q: '求', a: ['もとめる', 'きゅう'] }, { q: '泣', a: ['なく', 'きゅう'] }, { q: '浅', a: ['あさい', 'せん'] }, { q: '渡', a: ['わたる', 'と'] },
+      { q: '漂', a: ['ただよう', 'ひょう'] }, { q: '演', a: ['えんじる', 'えん'] }, { q: '照', a: ['てる', 'しょう'] }, { q: '熱', a: ['あツイ', 'ねつ'] }, { q: '牧', a: ['まき', 'ぼく'] },
+      { q: '特', a: ['とく'] }, { q: '産', a: ['うむ', 'さん'] }, { q: '関', a: ['せき', 'かん'] }, { q: '英', a: ['えい'] }, { q: '省', a: ['はぶく', 'しょう', 'せい'] },
+      { q: '陸', a: ['りく'] }, { q: '富', a: ['とみ', 'ふ'] }, { q: '静', a: ['しずか', 'せい'] }, { q: '観', a: ['みる', 'かん'] }, { q: '録', a: ['ろく'] },
+      { q: '輪', a: ['わ', 'りん'] }, { q: '選', a: ['えらぶ', 'せん'] }, { q: '郡', a: ['ぐん'] }, { q: '願', a: ['ねがう', 'がん'] }, { q: '類', a: ['たぐい', 'るい'] },
+      { q: '飛', a: ['とぶ', 'ひ'] }, { q: '飯', a: ['はん', 'めし'] }, { q: '養', a: ['養う', 'よう'] }
+    ],
+    kanji5: [
+      { q: '久', a: ['ひさしい', 'きゅう'] }, { q: '仏', a: ['ほとけ', 'ぶつ'] }, { q: '仮', a: ['かり', 'か'] }, { q: '件', a: ['けん'] }, { q: '任', a: ['まかせる', 'にん'] },
+      { q: '似', a: ['にる', 'じ'] }, { q: '余', a: ['あまる', 'よ'] }, { q: '価', a: ['あたい', 'か'] }, { q: '保', a: ['たもつ', 'ほ'] }, { q: '修', a: ['おさめる', 'しゅう'] },
+      { q: '俵', a: ['たわら', 'ひょう'] }, { q: '個', a: ['こ'] }, { q: '備', a: ['そなえる', 'び'] }, { q: '像', a: ['ぞう'] }, { q: '充', a: ['みたす', 'じゅう'] },
+      { q: '党', a: ['とう'] }, { q: '冊', a: ['さつ'] }, { q: '再', a: ['ふたたび', 'さい'] }, { q: '刑', a: ['けい'] }, { q: '券', a: ['けん'] },
+      { q: '制', a: ['せい'] }, { q: '刷', a: ['する', 'さつ'] }, { q: '副', a: ['ふく'] }, { q: '割', a: ['わる', 'かつ'] }, { q: '創', a: ['つくると', 'そう'] },
+      { q: '劇', a: ['げき'] }, { q: '加', a: ['くわえる', 'か'] }, { q: '功', a: ['こう'] }, { q: '勇', a: ['いさましい', 'ゆう'] }, { q: '務', a: ['つとめ', 'む'] },
+      { q: '勢', a: ['いきおい', 'せい'] }, { q: '包', a: ['つつむ', 'ほう'] }, { q: '匹', a: ['ひき', 'ひつ'] }, { q: '卓', a: ['たく'] }, { q: '危', a: ['あぶない', 'き'] },
+      { q: '卵', a: ['たまご', 'らん'] }, { q: '厚', a: ['あツイ', 'こう'] }, { q: '厳', a: ['きびしい', 'げん'] }, { q: '収', a: ['おさめる', 'しゅう'] }, { q: '吐', a: ['吐く', 'と'] }, { q: '吟', a: ['ぎん'] }, { q: '含', a: ['ふくむ', 'がん'] }, { q: '吸', a: ['すう', 'きゅう'] }, { q: '吹', a: ['ふく', 'すい'] }, { q: '告', a: ['つげる', 'こく'] },
+      { q: '周', a: ['まわり', 'しゅう'] }, { q: '堂', a: ['どう'] }, { q: '塩', a: ['しお', 'えん'] }, { q: '境', a: ['さかい', 'きょう'] }, { q: '墓', a: ['はか', 'ぼ'] },
+      { q: '増', a: ['ふえる', 'ぞう'] }, { q: '夢', a: ['ゆめ', 'む'] }, { q: '奥', a: ['おく', 'おう'] }, { q: '妻', a: ['つま', 'さい'] }, { q: '委', a: ['ゆだねる', 'い'] },
+      { q: '威', a: ['おどす', 'い'] }, { q: '娘', a: ['むすめ'] }
+    ],
+    kanji6: [
+      { q: '寸', a: ['すん'] }, { q: '専', a: ['せんもん', 'せん'] }, { q: '射', a: ['しゃてい', 'しゃ'] }, { q: '将', a: ['しょうぐん', 'しょう'] }, { q: '尊', a: ['とうとい', 'そん'] },
+      { q: '就', a: ['つく', 'しゅう'] }, { q: '尺', a: ['しゃく'] }, { q: '届', a: ['とどく'] }, { q: '展', a: ['てんかい', 'てん'] }, { q: '層', a: ['こうそう', 'そう'] },
+      { q: '己', a: ['おのれ', 'こ', 'き'] }, { q: '巻', a: ['まく', 'かん'] }, { q: '幕', a: ['まく', 'ばく'] }, { q: '干', a: ['ほす', 'かん'] }, { q: '幼', a: ['おさない', 'よう'] },
+      { q: '庁', a: ['かんちょう', 'ちょう'] }, { q: '座', a: ['すわる', 'ざ'] }, { q: '延', a: ['のばす', 'えん'] }, { q: '律', a: ['ほうりつ', 'りつ'] }, { q: '従', a: ['したがう', 'じゅう'] },
+      { q: '得', a: ['える', 'とく'] }, { q: '忘', a: ['わすれる', 'ぼう'] }, { q: '忠', a: ['ちゅうせい', 'ちゅう'] }, { q: '快', a: ['こころよい', 'かい'] }, { q: '念', a: ['ねんじる', 'ねん'] },
+      { q: '怒', a: ['おこる', 'ど'] }, { q: '怖', a: ['こわい', 'ふ'] }, { q: '患', a: ['かんじゃ', 'かん'] }, { q: '情', a: ['なさけ', 'じょう'] }, { q: '想', a: ['そうぞう', 'そう'] },
+      { q: '意', a: ['いみ', 'い'] }, { q: '愛', a: ['あい'] }, { q: '感', a: ['かんそう', 'かん'] }, { q: '慣', a: ['なれる', 'かん'] }, { q: '態', a: ['たいど', 'たい'] },
+      { q: '憲', a: ['けんぽう', 'けん'] }, { q: '我', a: ['われ', 'が'] }, { q: '戦', a: ['たたかう', 'せん'] }, { q: '批', a: ['ひひょう', 'ひ'] }, { q: '承', a: ['うけたまわる', 'しょう'] },
+      { q: '技', a: ['わざ', 'ぎ'] }, { q: '投', a: ['なげる', 'とう'] }, { q: '折', a: ['おる', 'せつ'] }, { q: '拝', a: ['おがむ', 'はい'] }, { q: '拾', a: ['ひろう', 'じゅう'] },
+      { q: '指', a: ['ゆび', 'し'] }, { q: '挙', a: ['あげる', 'きょ'] }, { q: '振', a: ['ふりかえる', 'しん'] }, { q: '挿', a: ['さす', 'そう'] }, { q: '援', a: ['しえん', 'えん'] },
+      { q: '操', a: ['あやつる', 'そう'] }, { q: '敬', a: ['うやまう', 'けい'] }, { q: '映', a: ['うつる', 'えい'] }, { q: '晩', a: ['ばん'] }, { q: '暖', a: ['あたたかい', 'だん'] },
+      { q: '暮', a: ['くらす', 'ぼ'] }, { q: '暴', a: ['あばれる', 'ぼう'] }, { q: '朗', a: ['ほがらか', 'ろう'] }, { q: '机', a: ['つくえ', 'き'] }, { q: '枚', a: ['まい'] },
+      { q: '染', a: ['そめる', 'せん'] }, { q: '株', a: ['かぶ'] }, { q: '棒', a: ['ぼう'] }, { q: '模', a: ['もほう', 'も'] }, { q: '権', a: ['けんり', 'けん'] },
+      { q: '欲', a: ['ほしい', 'よく'] }, { q: '段', a: ['かいだん', 'だん'] }, { q: '沿', a: ['そう', 'えん'] }, { q: '泉', a: ['いずみ', 'せん'] }, { q: '派', a: ['は'] },
+      { q: '源', a: ['みなもと', 'げん'] }, { q: '潮', a: ['しお', 'ちょう'] }, { q: '激', a: ['はげしい', 'げき'] }, { q: '灰', a: ['はい', 'かい'] }, { q: '熟', a: ['じゅくす', 'じゅく'] }
+    ]
+  };
+
+  // 計算設定データ
+  const mathModeNames = {
+    add: 'たしざん', carry_add: 'くりあがり',
+    sub: 'ひきざん', borrow_sub: 'くりさがり',
+    mul: 'かけざん', div: 'わりざん'
+  };
+
+  const mathStageIcons = {
+    '1': '🤖', '2': '🦁', '3': '🏎️', '4': '🚀', '5': '🐉',
+    '6': '🏰', '7': '⚔️', '8': '💎', '9': '🌟', '10': '👑',
+    'mix': '🎆', 'all': '🌈'
+  };
+
+  // アプリ統合状態
+  let currentCategory = 'katakana'; // katakana, kanji, math
+  let selectedKanaGroup = 'a';
+  let selectedKanjiGrade = 'kanji1';
+  let selectedKanjiCount = 10;
+  let selectedLifeSetting = 3;
+
+  let selectedMathMode = 'add';
+  let selectedMathStage = '1';
+  let selectedMathOrder = 'asc';
+
+  let currentGalleryTab = 'kanji';
+  let currentGalleryGrade = 'kanji1';
+
+  let problems = [];
+  let currentIndex = 0;
+  let currentLives = 3;
+  let currentInput = "";
+
+  let startTime = 0;
+  let timerInterval = null;
+  let elapsedTime = 0;
+  let stageMistakes = 0;
+  let isFreeMode = false;
+  let audioCtx = null;
+
+  // 統合セーブデータ
+  const SAVE_KEY = 'unified_study_app_progress_v1';
+  let userProgress = { kanjiSolved: {}, kanaSolved: {}, mathSolved: {}, freeMode: false };
+
+  function loadProgress() {
+    try {
+      const saved = localStorage.getItem(SAVE_KEY);
+      if (saved) userProgress = JSON.parse(saved);
+      if (!userProgress.kanjiSolved) userProgress.kanjiSolved = {};
+      if (!userProgress.kanaSolved) userProgress.kanaSolved = {};
+      if (!userProgress.mathSolved) userProgress.mathSolved = {};
+      isFreeMode = !!userProgress.freeMode;
+    } catch(e) {
+      userProgress = { kanjiSolved: {}, kanaSolved: {}, mathSolved: {}, freeMode: false };
+    }
+    updateLockStatus();
+  }
+
+  function saveProgress() {
+    userProgress.freeMode = isFreeMode;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(userProgress));
+    } catch(e) {}
+    updateLockStatus();
+  }
+
+  // アンロック確認
+  function isKanaGroupUnlocked(groupId) {
+    if (isFreeMode || groupId === 'a') return true;
+    const idx = kanaGroupList.findIndex(g => g.id === groupId);
+    if (idx <= 0) return true;
+    const prevGroup = kanaGroupList[idx - 1];
+    const prevList = kanaData.filter(k => k.group === prevGroup.id);
+    const solvedSet = userProgress.kanaSolved[prevGroup.id] || [];
+    return prevList.length > 0 && solvedSet.length >= prevList.length;
+  }
+
+  function isKanjiGradeUnlocked(gradeKey) {
+    if (isFreeMode || gradeKey === 'kanji1') return true;
+    const gradeNum = parseInt(gradeKey.replace('kanji', ''), 10);
+    const prevKey = `kanji${gradeNum - 1}`;
+    const prevList = kanjiDatabase[prevKey] || [];
+    const solvedSet = userProgress.kanjiSolved[prevKey] || [];
+    return prevList.length > 0 && solvedSet.length >= prevList.length;
+  }
+
+  function isMathStageUnlocked(mode, stageStr) {
+    if (isFreeMode || stageStr === '1') return true;
+    const modeSolved = userProgress.mathSolved[mode] || [];
+    if (stageStr === 'mix' || stageStr === 'all') {
+      for (let i = 1; i <= 10; i++) {
+        if (!modeSolved.includes(String(i))) return false;
+      }
+      return true;
+    }
+    const num = parseInt(stageStr, 10);
+    const prevStr = String(num - 1);
+    return modeSolved.includes(prevStr);
+  }
+
+  function updateLockStatus() {
+    const lockBtn = document.getElementById('lock-toggle-btn');
+    lockBtn.innerText = isFreeMode ? '🔓 じゆう' : '🔒 じゅんばん';
+
+    // カタカナ
+    renderKanaMenu();
+
+    // 漢字
+    const kanjiGradeBtns = document.querySelectorAll('#kanji-grade-tabs .mode-btn');
+    const grades = ['kanji1', 'kanji2', 'kanji3', 'kanji4', 'kanji5', 'kanji6'];
+    kanjiGradeBtns.forEach((btn, idx) => {
+      const g = grades[idx];
+      if (isKanjiGradeUnlocked(g)) btn.classList.remove('locked');
+      else btn.classList.add('locked');
+    });
+
+    // 計算
+    renderMathStageButtons();
+  }
+
+  function toggleFreeMode() {
+    playClickSound();
+    isFreeMode = !isFreeMode;
+    saveProgress();
+    alert(isFreeMode ? 'モード変更: ぜんぶの学年・あ行・段が遊べるようになりました！' : 'モード変更: 順番にアンロックするモードになりました！');
+  }
+
+  // カテゴリ切り替え（カナ／漢字／計算）
+  function switchAppCategory(cat, el) {
+    playClickSound();
+    currentCategory = cat;
+    document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+
+    document.getElementById('katakana-menu').classList.add('hidden');
+    document.getElementById('kanji-menu').classList.add('hidden');
+    document.getElementById('math-menu').classList.add('hidden');
+
+    if (cat === 'katakana') {
+      document.getElementById('katakana-menu').classList.remove('hidden');
+      document.getElementById('life-setting-section').classList.remove('hidden');
+    } else if (cat === 'kanji') {
+      document.getElementById('kanji-menu').classList.remove('hidden');
+      document.getElementById('life-setting-section').classList.remove('hidden');
+    } else if (cat === 'math') {
+      document.getElementById('math-menu').classList.remove('hidden');
+      document.getElementById('life-setting-section').classList.add('hidden');
+    }
+  }
+
+  // UI描画関数
+  function renderKanaMenu() {
+    const grid = document.getElementById('kana-group-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    kanaGroupList.forEach(group => {
+      const unlocked = isKanaGroupUnlocked(group.id);
+      const list = kanaData.filter(k => k.group === group.id);
+      const solvedSet = userProgress.kanaSolved[group.id] || [];
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `opt-btn ${selectedKanaGroup === group.id ? 'active' : ''} ${!unlocked ? 'locked' : ''}`;
+      
+      let label = unlocked ? `${group.name}` : `🔒 ${group.name}`;
+      if (unlocked) label += `<br><span style="font-size:10px; font-weight:normal;">(${solvedSet.length}/${list.length})</span>`;
+      btn.innerHTML = label;
+      btn.onclick = () => selectKanaGroup(group.id, btn, unlocked);
+      grid.appendChild(btn);
+    });
+
+    const allBtn = document.getElementById('kana-all-btn');
+    if (allBtn) allBtn.className = `opt-btn ${selectedKanaGroup === 'all' ? 'active' : ''}`;
+  }
+
+  function selectKanaGroup(group, el, unlocked = true) {
+    if (!unlocked) {
+      playWrongSound();
+      alert('前のかたかなを ぜんぶクリアすると あそべるよ！');
+      return;
+    }
+    playClickSound();
+    selectedKanaGroup = group;
+    renderKanaMenu();
+  }
+
+  function switchKanjiGrade(gradeKey, el) {
+    if (!isKanjiGradeUnlocked(gradeKey)) {
+      playWrongSound();
+      alert('前の学年のかんじを ぜんぶクリアすると あそべるよ！');
+      return;
+    }
+    playClickSound();
+    selectedKanjiGrade = gradeKey;
+    document.querySelectorAll('#kanji-grade-tabs .mode-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function selectKanjiCount(count, el) {
+    playClickSound();
+    selectedKanjiCount = count;
+    document.querySelectorAll('#kanji-menu .opt-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function renderMathStageButtons() {
+    const container = document.getElementById('math-stage-buttons');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let i = 1; i <= 10; i++) {
+      const stageStr = String(i);
+      const unlocked = isMathStageUnlocked(selectedMathMode, stageStr);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `opt-btn ${selectedMathStage === stageStr ? 'active' : ''} ${!unlocked ? 'locked' : ''}`;
+      btn.innerText = unlocked ? `${i}のだん` : `🔒 ${i}のだん`;
+      btn.onclick = () => selectMathStage(stageStr, btn, unlocked);
+      container.appendChild(btn);
+    }
+
+    const mixUnlocked = isMathStageUnlocked(selectedMathMode, 'mix');
+    const mixBtn = document.getElementById('btn-math-mix');
+    if (mixBtn) {
+      mixBtn.className = `opt-btn ${selectedMathStage === 'mix' ? 'active' : ''} ${!mixUnlocked ? 'locked' : ''}`;
+      mixBtn.innerText = mixUnlocked ? 'ミックス(10もん)' : '🔒 ミックス';
+      mixBtn.onclick = () => selectMathStage('mix', mixBtn, mixUnlocked);
+    }
+
+    const allBtn = document.getElementById('btn-math-all');
+    if (allBtn) {
+      allBtn.className = `opt-btn ${selectedMathStage === 'all' ? 'active' : ''} ${!mixUnlocked ? 'locked' : ''}`;
+      allBtn.innerText = mixUnlocked ? 'ぜんぶ(100もん)' : '🔒 ぜんぶ';
+      allBtn.onclick = () => selectMathStage('all', allBtn, mixUnlocked);
+    }
+  }
+
+  function selectMathMode(mode, element) {
+    playClickSound();
+    selectedMathMode = mode;
+    document.querySelectorAll('#math-menu .op-btn').forEach(b => b.classList.remove('active'));
+    element.classList.add('active');
+    
+    if (!isMathStageUnlocked(selectedMathMode, selectedMathStage)) {
+      selectedMathStage = '1';
+    }
+    renderMathStageButtons();
+  }
+
+  function selectMathStage(stage, element, unlocked = true) {
+    if (!unlocked) {
+      playWrongSound();
+      alert('まえの段を クリアすると あそべるよ！');
+      return;
+    }
+    playClickSound();
+    selectedMathStage = stage;
+    renderMathStageButtons();
+  }
+
+  function selectMathOrder(order, element) {
+    playClickSound();
+    selectedMathOrder = order;
+    document.querySelectorAll('#math-order-buttons .opt-btn').forEach(b => b.classList.remove('active'));
+    element.classList.add('active');
+  }
+
+  function selectLife(life, el) {
+    playClickSound();
+    selectedLifeSetting = life;
+    document.querySelectorAll('#life-buttons .opt-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // 音声効果
+  function getAudioContext() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch(e) {}
+    return audioCtx;
+  }
+
+  function playClickSound() {
+    try {
+      const ctx = getAudioContext(); if (!ctx) return;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.04);
+    } catch(e) {}
+  }
+
+  function playCorrectSound() {
+    try {
+      const ctx = getAudioContext(); if (!ctx) return;
+      const now = ctx.currentTime;
+      const notes = [523.25, 783.99, 1046.50];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.2, now + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.25);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.25);
+      });
+    } catch(e) {}
+  }
+
+  function playWrongSound() {
+    try {
+      const ctx = getAudioContext(); if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(140, now);
+      osc.frequency.setValueAtTime(110, now + 0.15);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.35);
+    } catch(e) {}
+  }
+
+  function playClearSound() {
+    try {
+      const ctx = getAudioContext(); if (!ctx) return;
+      const now = ctx.currentTime;
+      const melody = [
+        { freq: 523.25, time: 0, duration: 0.12 }, { freq: 659.25, time: 0.12, duration: 0.12 },
+        { freq: 783.99, time: 0.24, duration: 0.12 }, { freq: 1046.50, time: 0.36, duration: 0.4 }
+      ];
+      melody.forEach(note => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.value = note.freq;
+        gain.gain.setValueAtTime(0.2, now + note.time);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + note.duration);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + note.time); osc.stop(now + note.time + note.duration);
+      });
+    } catch(e) {}
+  }
+
+  // ゲーム制御
+  function startGame() {
+    playClickSound();
+    problems = [];
+    currentLives = (selectedLifeSetting === 'inf') ? Infinity : parseInt(selectedLifeSetting, 10);
+
+    document.getElementById('choice-grid').classList.add('hidden');
+    document.getElementById('math-input-container').classList.add('hidden');
+    document.getElementById('life-display').classList.remove('hidden');
+    document.getElementById('timer-display').classList.add('hidden');
+
+    if (currentCategory === 'katakana') {
+      let pool = (selectedKanaGroup === 'all')
+        ? [...kanaData].sort(() => Math.random() - 0.5)
+        : kanaData.filter(k => k.group === selectedKanaGroup).sort(() => Math.random() - 0.5);
+      problems = pool.map(item => ({ question: item.katakana, allReadings: item.hiragana, type: 'katakana', rawItem: item }));
+      document.getElementById('choice-grid').classList.remove('hidden');
+      updateLifeDisplay();
+    } else if (currentCategory === 'kanji') {
+      let list = kanjiDatabase[selectedKanjiGrade] || kanjiDatabase.kanji1;
+      let pool = [...list].sort(() => Math.random() - 0.5);
+      if (selectedKanjiCount !== 'all') pool = pool.slice(0, parseInt(selectedKanjiCount, 10));
+      problems = pool.map(item => ({ question: item.q, allReadings: item.a, type: 'kanji', rawItem: item }));
+      document.getElementById('choice-grid').classList.remove('hidden');
+      updateLifeDisplay();
+    } else if (currentCategory === 'math') {
+      problems = generateMathProblems();
+      document.getElementById('math-input-container').classList.remove('hidden');
+      document.getElementById('life-display').classList.add('hidden');
+      document.getElementById('timer-display').classList.remove('hidden');
+
+      stageMistakes = 0;
+      startTime = Date.now();
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 1000);
+      updateTimer();
+    }
+
+    currentIndex = 0;
+    document.getElementById('setup-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+
+    showQuestion();
+  }
+
+  function updateLifeDisplay() {
+    const el = document.getElementById('life-display');
+    if (selectedLifeSetting === 'inf') {
+      el.innerText = '❤️ む制限';
+    } else {
+      let hearts = '';
+      for (let i = 0; i < currentLives; i++) hearts += '❤️';
+      el.innerText = hearts || '🖤';
+    }
+  }
+
+  function updateTimer() {
+    elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+    let m = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+    let s = String(elapsedTime % 60).padStart(2, '0');
+    document.getElementById('timer-display').innerText = `⏱ ${m}:${s}`;
+  }
+
+  function showQuestion() {
+    const q = problems[currentIndex];
+    document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${problems.length}問`;
+
+    if (currentCategory === 'math') {
+      document.getElementById('quiz-display').innerText = q.text;
+      document.getElementById('quiz-subtext').innerText = 'こたえを 入力してね！';
+      currentInput = "";
+      updateMathDisplay();
+    } else {
+      document.getElementById('quiz-display').innerText = q.question;
+      document.getElementById('quiz-subtext').innerText = (q.type === 'katakana') ? 'これの「ひらがな」はどれ？' : 'これの「よみかた」はどれ？';
+
+      const correctReading = q.allReadings[Math.floor(Math.random() * q.allReadings.length)];
+      q.targetCorrect = correctReading;
+
+      let candidatePool = [];
+      if (q.type === 'katakana') {
+        kanaData.forEach(k => k.hiragana.forEach(r => {
+          if (!q.allReadings.includes(r) && !candidatePool.includes(r)) candidatePool.push(r);
+        }));
+      } else {
+        const currentList = kanjiDatabase[selectedKanjiGrade] || kanjiDatabase.kanji1;
+        currentList.forEach(k => k.a.forEach(r => {
+          if (!q.allReadings.includes(r) && !candidatePool.includes(r)) candidatePool.push(r);
+        }));
+      }
+      candidatePool.sort(() => Math.random() - 0.5);
+
+      let choices = [correctReading, candidatePool[0], candidatePool[1], candidatePool[2]];
+      choices.sort(() => Math.random() - 0.5);
+
+      const grid = document.getElementById('choice-grid');
+      grid.innerHTML = '';
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'choice-btn';
+        btn.innerText = choice;
+        btn.onclick = () => checkChoiceAnswer(choice, correctReading, q);
+        grid.appendChild(btn);
+      });
+    }
+  }
+
+  // 文字回答処理
+  function checkChoiceAnswer(selected, correct, questionObj) {
+    if (selected === correct) {
+      playCorrectSound();
+      
+      if (questionObj.type === 'kanji') {
+        if (!userProgress.kanjiSolved[selectedKanjiGrade]) userProgress.kanjiSolved[selectedKanjiGrade] = [];
+        if (!userProgress.kanjiSolved[selectedKanjiGrade].includes(questionObj.question)) {
+          userProgress.kanjiSolved[selectedKanjiGrade].push(questionObj.question);
+          saveProgress();
+        }
+      } else if (questionObj.type === 'katakana') {
+        const group = questionObj.rawItem.group;
+        if (!userProgress.kanaSolved[group]) userProgress.kanaSolved[group] = [];
+        if (!userProgress.kanaSolved[group].includes(questionObj.question)) {
+          userProgress.kanaSolved[group].push(questionObj.question);
+          saveProgress();
+        }
+      }
+
+      currentIndex++;
+      if (currentIndex < problems.length) {
+        showQuestion();
+      } else {
+        setTimeout(() => {
+          alert('🎉 すごーい！ぜんぶ クリア！！');
+          document.getElementById('game-screen').classList.add('hidden');
+          document.getElementById('setup-screen').classList.remove('hidden');
+        }, 200);
+      }
+    } else {
+      playWrongSound();
+      if (selectedLifeSetting !== 'inf') {
+        currentLives--;
+        updateLifeDisplay();
+        if (currentLives <= 0) {
+          setTimeout(() => {
+            alert('💔 ライフが なくなった！\nざんねん！ゲームオーバー！');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+          }, 200);
+        }
+      }
+    }
+  }
+
+  // 計算問題生成＆処理
+  function makeSingleMathProblem(n, j, mode) {
+    if (mode === 'add') return { text: `${n} + ${j} = ?`, ans: n + j, val: n + j };
+    if (mode === 'carry_add') {
+      let addend = 10 - n + (j - 1);
+      return { text: `${n} + ${addend} = ?`, ans: n + addend, val: n + addend };
+    }
+    if (mode === 'sub') return { text: `${n + j} - ${n} = ?`, ans: j, val: n + j };
+    if (mode === 'borrow_sub') {
+      let u = (j - 1) % Math.max(1, n);
+      let minuend = 10 + u;
+      return { text: `${minuend} - ${n} = ?`, ans: minuend - n, val: minuend };
+    }
+    if (mode === 'mul') return { text: `${n} × ${j} = ?`, ans: n * j, val: n * j };
+    if (mode === 'div') return { text: `${n * j} ÷ ${n} = ?`, ans: j, val: n * j };
+  }
+
+  function generateMathProblems() {
+    let list = [];
+    if (selectedMathStage === 'all' || selectedMathStage === 'mix') {
+      for (let i = 1; i <= 10; i++) {
+        for (let j = 1; j <= 10; j++) list.push(makeSingleMathProblem(i, j, selectedMathMode));
+      }
+    } else {
+      let n = parseInt(selectedMathStage, 10);
+      for (let j = 1; j <= 10; j++) list.push(makeSingleMathProblem(n, j, selectedMathMode));
+    }
+
+    if (selectedMathStage === 'mix') {
+      list.sort(() => Math.random() - 0.5);
+      list = list.slice(0, 10);
+    }
+
+    if (selectedMathOrder === 'asc') list.sort((a, b) => a.val - b.val);
+    else if (selectedMathOrder === 'desc') list.sort((a, b) => b.val - a.val);
+    else if (selectedMathOrder === 'rand') list.sort(() => Math.random() - 0.5);
+
+    return list;
+  }
+
+  function pressNum(digit) {
+    playClickSound();
+    if (currentInput.length < 4) { currentInput += digit; updateMathDisplay(); }
+  }
+  function deleteLastNum() { playClickSound(); currentInput = currentInput.slice(0, -1); updateMathDisplay(); }
+  function clearInput() { playClickSound(); currentInput = ""; updateMathDisplay(); }
+  function updateMathDisplay() { document.getElementById('answer-display').innerText = currentInput || '?'; }
+
+  function submitMathAnswer() {
+    if (!currentInput) { alert('すうじを おしてね！'); return; }
+    const userAns = parseInt(currentInput, 10);
+    const q = problems[currentIndex];
+
+    if (userAns === q.ans) {
+      playCorrectSound();
+      currentIndex++;
+      if (currentIndex < problems.length) {
+        showQuestion();
+      } else {
+        finishMathStage();
+      }
+    } else {
+      stageMistakes++;
+      playWrongSound();
+      alert('おしい！もういちど かんがえてみよう！');
+      currentInput = "";
+      updateMathDisplay();
+    }
+  }
+
+  function finishMathStage() {
+    if (timerInterval) clearInterval(timerInterval);
+    playClearSound();
+
+    if (!userProgress.mathSolved[selectedMathMode]) userProgress.mathSolved[selectedMathMode] = [];
+    if (!userProgress.mathSolved[selectedMathMode].includes(selectedMathStage)) {
+      userProgress.mathSolved[selectedMathMode].push(selectedMathStage);
+      saveProgress();
+    }
+
+    let m = Math.floor(elapsedTime / 60);
+    let s = elapsedTime % 60;
+    let timeStr = m > 0 ? `${m}ふん ${s}びょう` : `${s}びょう`;
+    let stageTitle = (selectedMathStage === 'mix') ? 'ミックス' : (selectedMathStage === 'all' ? 'ぜんぶ' : `${selectedMathStage}の段`);
+    let clearMessage = `🎉 すごーい！${mathModeNames[selectedMathMode]}【${stageTitle}】クリア！\n⏱ かかったじかん：${timeStr}`;
+    
+    if (stageMistakes === 0) {
+      clearMessage = `👑 パーフェクト達成！✨\n${mathModeNames[selectedMathMode]}【${stageTitle}】を ノーミスで クリアしたよ！\n⏱ かかったじかん：${timeStr}`;
+    }
+
+    setTimeout(() => {
+      alert(clearMessage);
+      document.getElementById('game-screen').classList.add('hidden');
+      document.getElementById('setup-screen').classList.remove('hidden');
+    }, 200);
+  }
+
+  function quitGame() {
+    playClickSound();
+    if (confirm('ほんとうに やめる？')) {
+      if (timerInterval) clearInterval(timerInterval);
+      document.getElementById('game-screen').classList.add('hidden');
+      document.getElementById('setup-screen').classList.remove('hidden');
+    }
+  }
+
+  // --- 図鑑（ギャラリー）画面 ---
+  function openGallery() {
+    playClickSound();
+    document.getElementById('setup-screen').classList.add('hidden');
+    document.getElementById('gallery-screen').classList.remove('hidden');
+    renderGallery();
+  }
+
+  function closeGallery() {
+    playClickSound();
+    document.getElementById('gallery-screen').classList.add('hidden');
+    document.getElementById('setup-screen').classList.remove('hidden');
+  }
+
+  function switchGalleryTab(tab, el) {
+    playClickSound();
+    currentGalleryTab = tab;
+    document.querySelectorAll('#gallery-screen .main-tab-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+
+    if (tab === 'kanji') {
+      document.getElementById('gallery-kanji-section').classList.remove('hidden');
+      document.getElementById('gallery-math-section').classList.add('hidden');
+    } else {
+      document.getElementById('gallery-kanji-section').classList.add('hidden');
+      document.getElementById('gallery-math-section').classList.remove('hidden');
+    }
+    renderGallery();
+  }
+
+  function switchGalleryGrade(gradeKey, el) {
+    playClickSound();
+    currentGalleryGrade = gradeKey;
+    document.querySelectorAll('#gallery-grade-tabs .mode-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderGallery();
+  }
+
+  function renderGallery() {
+    const grid = document.getElementById('gallery-grid');
+    grid.innerHTML = '';
+
+    if (currentGalleryTab === 'kanji') {
+      const list = kanjiDatabase[currentGalleryGrade] || [];
+      const solvedSet = userProgress.kanjiSolved[currentGalleryGrade] || [];
+      document.getElementById('gallery-kanji-status').innerText = `${solvedSet.length} / ${list.length} かんじ クリア`;
+
+      list.forEach(item => {
+        const div = document.createElement('div');
+        const isSolved = solvedSet.includes(item.q);
+        div.className = `gallery-item ${isSolved ? 'solved' : ''}`;
+        div.innerText = isSolved ? item.q : '🔒';
+        div.onclick = () => { if (isSolved) showModal(item.q, item.a.join('、')); };
+        grid.appendChild(div);
+      });
+    } else if (currentGalleryTab === 'math') {
+      let unlockedTotal = 0;
+      let totalItems = 0;
+      const modes = ['add', 'carry_add', 'sub', 'borrow_sub', 'mul', 'div'];
+      const stages = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'mix', 'all'];
+
+      modes.forEach(m => {
+        const solvedList = userProgress.mathSolved[m] || [];
+        stages.forEach(s => {
+          totalItems++;
+          const isUnlocked = solvedList.includes(s);
+          if (isUnlocked) unlockedTotal++;
+
+          const item = document.createElement('div');
+          let cardClass = 'card-n'; let rarityTag = 'N'; let rarityColor = '#94a3b8';
+          if (s === '10' || s === 'all') { cardClass = 'card-ur'; rarityTag = 'UR'; rarityColor = '#eab308'; }
+          else if (s === '5' || s === 'mix') { cardClass = 'card-sr'; rarityTag = 'SR'; rarityColor = '#f59e0b'; }
+          else if (parseInt(s, 10) >= 6) { cardClass = 'card-r'; rarityTag = 'R'; rarityColor = '#3b82f6'; }
+
+          item.className = `gallery-item ${isUnlocked ? cardClass : ''}`;
+          const icon = mathStageIcons[s] || '⭐';
+          const sName = (s === 'mix') ? 'ミックス' : (s === 'all' ? 'ぜんぶ' : `${s}の段`);
+
+          if (isUnlocked) {
+            item.innerHTML = `
+              <span class="rarity-tag" style="background-color: ${rarityColor}">${rarityTag}</span>
+              <div class="item-icon">${icon}</div>
+              <div style="font-size:10px; font-weight:bold; color:#334155;">${mathModeNames[m]}</div>
+              <div class="item-sub">${sName}</div>
+            `;
+          } else {
+            item.innerHTML = `
+              <div class="item-icon">🔒</div>
+              <div style="font-size:10px; color:#94a3b8;">${mathModeNames[m]}</div>
+              <div class="item-sub">${sName}</div>
+            `;
+          }
+          grid.appendChild(item);
+        });
+      });
+      document.getElementById('gallery-math-status').innerText = `${unlockedTotal} / ${totalItems} ステージ マスター`;
+    }
+  }
+
+  function showModal(title, desc) {
+    playClickSound();
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-desc').innerText = desc;
+    document.getElementById('modal-screen').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    playClickSound();
+    document.getElementById('modal-screen').classList.add('hidden');
+  }
+
+  function resetData() {
+    playClickSound();
+    if (confirm('これまでの クリア記録（文字・計算）を ぜんぶ リセットする？')) {
+      userProgress = { kanjiSolved: {}, kanaSolved: {}, mathSolved: {}, freeMode: false };
+      isFreeMode = false;
+      saveProgress();
+      alert('記録を リセットしました。');
+    }
+  }
+
+  // 初期化
+  loadProgress();
+</script>
+
+</body>
+</html>
